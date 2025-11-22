@@ -42,7 +42,7 @@ TFT_eSPI tft = TFT_eSPI();
 int missing = 0; int assigned = 0; int done = 0;
 String taskName = "Syncing..."; String listData = ""; 
 String classData = ""; // V5: "Math:2|English:0"
-int page = 0; // 0:Dash, 1:List, 2:Schedule, 3:WarRoom, 4:Standby
+int page = 0; // 0:Dash, 1:List, 2:Schedule, 3:Breakdown, 4:Standby
 unsigned long lastTap = 0;
 bool updateNeeded = true;
 // --- 3. SUBJECT CONFIGURATION ---
@@ -211,14 +211,14 @@ void drawWeeklyGrid() {
     }
   }
 }
-// --- PAGE 3: BREAKDOWN (SECTOR INTEGRITY) ---
+// --- PAGE 3: BREAKDOWN  ---
 void drawBreakdown() {
   tft.fillScreen(C_BG);
   tft.fillRect(0, 0, 320, 35, C_RED); 
   tft.setTextFont(4);
   tft.setTextColor(C_WHITE, C_RED); 
   tft.setTextDatum(ML_DATUM);
-  tft.drawString("SECTOR STATUS", 10, 18); // Renamed for cool factor
+  tft.drawString("BREAKDOWN", 10, 18); 
   
   // CHECK FOR NO DATA
   if (classData.length() == 0) {
@@ -281,38 +281,38 @@ void drawBreakdown() {
 // --- SETUP SCHEDULE ---
 void setupSchedule() {
   // MONDAY
-  timetable[0][0] = {"Biology", "Miss Brech", "SC9", 8, 30};
-  timetable[0][1] = {"Indep. Learning", "Miss Guinea", "Hall", 9, 25};
-  timetable[0][2] = {"Geography", "Miss Crisp", "H10", 10, 55};
-  timetable[0][3] = {"Geography", "Miss Crisp", "H10", 11, 50};
-  timetable[0][4] = {"Indep. Learning", "Miss Guinea", "Hall", 13, 25};
-  timetable[0][5] = {"Indep. Learning", "Miss Guinea", "Hall", 14, 20};
+  timetable[0][0] = {"Biology", "Miss Berlin", "SC9", 8, 30};
+  timetable[0][1] = {"Indep. Learning", "Miss Hampster", "Hall", 9, 25};
+  timetable[0][2] = {"Geography", "Miss Soggy", "H10", 10, 55};
+  timetable[0][3] = {"Geography", "Miss Soggy", "H10", 11, 50};
+  timetable[0][4] = {"Indep. Learning", "Miss Hampster", "Hall", 13, 25};
+  timetable[0][5] = {"Indep. Learning", "Miss Hampster", "Hall", 14, 20};
   // TUESDAY
   timetable[1][0] = {"FREE", "", "", 8, 30};
   timetable[1][1] = {"Assembly", "", "Main Hall", 9, 25};
-  timetable[1][2] = {"CompSci", "Mr K", "IT3", 10, 55};
-  timetable[1][3] = {"Indep. Learning", "Miss Guinea", "Hall", 11, 50};
-  timetable[1][4] = {"Biology", "Miss Brech", "SC9", 13, 25};
-  timetable[1][5] = {"Biology", "Miss Brech", "SC9", 14, 20};
+  timetable[1][2] = {"CompSci", "Mr Kraków", "IT3", 10, 55};
+  timetable[1][3] = {"Indep. Learning", "Miss Hampster", "Hall", 11, 50};
+  timetable[1][4] = {"Biology", "Miss Berlin", "SC9", 13, 25};
+  timetable[1][5] = {"Biology", "Miss Berlin", "SC9", 14, 20};
   // WEDNESDAY
-  timetable[2][0] = {"Geography", "Mr Cawthorn", "H10", 8, 30};
-  timetable[2][1] = {"Indep. Learning", "Miss Guinea", "Hall", 9, 25};
-  timetable[2][2] = {"Core RE", "Mr Stock", "H8", 10, 55};
-  timetable[2][3] = {"Indep. Learning", "Miss Guinea", "Hall", 11, 50};
+  timetable[2][0] = {"Geography", "Mr Sheffield", "H10", 8, 30};
+  timetable[2][1] = {"Indep. Learning", "Miss Hampster", "Hall", 9, 25};
+  timetable[2][2] = {"Core RE", "Mr Mag", "H8", 10, 55};
+  timetable[2][3] = {"Indep. Learning", "Miss Hampster", "Hall", 11, 50};
   timetable[2][4] = {"FREE", "", "", 13, 25};
   timetable[2][5] = {"FREE", "", "", 14, 20};
   // THURSDAY
-  timetable[3][0] = {"CompSci", "Mr K", "IT3", 8, 30};
-  timetable[3][1] = {"CompSci", "Mr K", "IT3", 9, 25};
-  timetable[3][2] = {"Biology", "Miss Baganel", "SC10", 10, 55};
-  timetable[3][3] = {"Biology", "Miss Baganel", "SC10", 11, 50};
-  timetable[3][4] = {"Geography", "Mr Cawthorn", "SEM3", 13, 25};
-  timetable[3][5] = {"Geography", "Miss Crisp", "SEM3", 14, 20};
+  timetable[3][0] = {"CompSci", "Mr Kraków", "IT3", 8, 30};
+  timetable[3][1] = {"CompSci", "Mr Kraków", "IT3", 9, 25};
+  timetable[3][2] = {"Biology", "Miss Bagel", "SC10", 10, 55};
+  timetable[3][3] = {"Biology", "Miss Bagel", "SC10", 11, 50};
+  timetable[3][4] = {"Geography", "Mr Sheffield", "SEM3", 13, 25};
+  timetable[3][5] = {"Geography", "Miss Soggy", "SEM3", 14, 20};
   // FRIDAY
-  timetable[4][0] = {"Indep. Learning", "Miss Guinea", "Hall", 8, 30};
-  timetable[4][1] = {"Indep. Learning", "Miss Guinea", "Hall", 9, 25};
-  timetable[4][2] = {"CompSci", "Mr K", "IT3", 10, 55};
-  timetable[4][3] = {"CompSci", "Mr K", "IT3", 11, 50};
+  timetable[4][0] = {"Indep. Learning", "Miss Hampster", "Hall", 8, 30};
+  timetable[4][1] = {"Indep. Learning", "Miss Hampster", "Hall", 9, 25};
+  timetable[4][2] = {"CompSci", "Mr Kraków", "IT3", 10, 55};
+  timetable[4][3] = {"CompSci", "Mr Kraków", "IT3", 11, 50};
   timetable[4][4] = {"FREE", "", "", 13, 25};
   timetable[4][5] = {"FREE", "", "", 14, 20};
 }
