@@ -20,6 +20,7 @@ This project is a custom firmware for the **ESP32-2432S028** (CYD) that connects
 - [x] **Smart Timetable**: A 5-day grid that automatically highlights lessons in **RED** if you have missing work for that subject.
 - [x] **Smart Filtering**: Automatically maps messy Google Classroom names (e.g., "13A/CS1") to clean subject codes (e.g., "CompSci").
 - [ ] **OTA Updates**: (Planned) Update firmware wirelessly.
+- [ ] **AI Overview?**: (Potential) An AI summary of the state of your google classroom
 
 ## Screenshots
 
