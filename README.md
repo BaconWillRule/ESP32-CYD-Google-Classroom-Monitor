@@ -10,7 +10,7 @@
 
 **Turn your "Cheap Yellow Display" into a dedicated command center for your school life.**
 
-This project is a custom firmware for the **ESP32-2432S028** (commonly known as the CYD) that connects to Google Classroom. It doesn't just list your homework; it visualizes your academic status with a smart timetable and a gamified "Sector Integrity" breakdown.
+This project is a custom firmware for the **ESP32-2432S028** (CYD) that connects to Google Classroom. It doesn't just list your homework; it visualizes your academic status with a smart timetable and a courses breakdown.
 
 ## Features
 
