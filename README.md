@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-ESP32-blue?style=flat-square" alt="Platform">
   <img src="https://img.shields.io/badge/Display-ILI9341-red?style=flat-square" alt="Display">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat-square" alt="License">
 </p>
 
 ---
@@ -160,4 +160,6 @@ Check your `searchKey` configuration. The system needs to find a partial match i
 
 ## License
 
-This project is open source. Feel free to modify and distribute it as you see fit.
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
+
+You are free to use, modify, and distribute this software. However, if you distribute modifications, they must also be open source under the same license. This ensures the project remains free for everyone.
