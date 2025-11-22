@@ -14,9 +14,10 @@ This project is a custom firmware for the **ESP32-2432S028** (commonly known as 
 
 ## Features
 
-- [x] **Smart Timetable**: A 5-day grid that automatically highlights lessons in **RED** if you have missing work for that subject.
 - [x] **Touch Interface**: Smooth, driver-level touch controls to cycle between Dashboard, List, Grid, and Breakdown views.
 - [x] **Chill Mode**: A Matrix-style rain animation that kicks in when you have 0 missing assignments.
+- [X] **Class Breakdown**: A breakdown of your classes each given a score based on missing work (the score logic will be improved in the future)
+- [x] **Smart Timetable**: A 5-day grid that automatically highlights lessons in **RED** if you have missing work for that subject.
 - [x] **Smart Filtering**: Automatically maps messy Google Classroom names (e.g., "13A/CS1") to clean subject codes (e.g., "CompSci").
 - [ ] **OTA Updates**: (Planned) Update firmware wirelessly.
 
@@ -130,7 +131,7 @@ timetable[0][0] = {"Biology", "Miss Brech", "SC9", 8, 30};
 
 ### Setting Up Monitored Subjects
 
-To make the "Sector Integrity" page work, you need to tell the system which subjects to track and how to find them in the Google data.
+To make the "Breakdown" page work, you need to tell the system which subjects to track and how to find them in the Google data.
 
 ```cpp
 SubjectTarget monitoredSubjects[] = {
