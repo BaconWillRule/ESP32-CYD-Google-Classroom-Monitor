@@ -154,7 +154,7 @@ Ensure you have configured `User_Setup.h` in the `TFT_eSPI` library correctly fo
 
 Yes, but you will need to change the pin definitions for the Touch and Display drivers. The logic itself is board-agnostic.
 
-### My "Sector Integrity" is always 0%?
+### My Breakdown Score is always 0%?
 
 Check your `searchKey` configuration. The system needs to find a partial match in the data sent from Google. Use `Serial.print` to debug the raw data coming in.
 
