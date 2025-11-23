@@ -38,6 +38,12 @@ TFT_eSPI tft = TFT_eSPI();
 #define C_RED_2     0xB000
 #define C_RED_3     0x7800
 #define C_RED_4     0x4000
+
+#define C_GREEN_1   0x07E0
+#define C_GREEN_2   0x0660
+#define C_GREEN_3   0x04E0
+#define C_GREEN_4   0x0360
+
 // --- VARIABLES ---
 int missing = 0; int assigned = 0; int done = 0;
 String taskName = "Syncing..."; String listData = ""; 
@@ -45,11 +51,13 @@ String classData = ""; // V5: "Math:2|English:0"
 int page = 0; // 0:Dash, 1:List, 2:Schedule, 3:Breakdown, 4:Standby
 unsigned long lastTap = 0;
 bool updateNeeded = true;
+
 // --- 3. SUBJECT CONFIGURATION ---
 struct SubjectTarget {
   String displayName; // "Biology"
   String searchKey;   // "BIO" (Finds "13B/BIO")
 };
+
 // DEFINE MONITORED SUBJECTS HERE
 SubjectTarget monitoredSubjects[] = {
   {"Biology",   "BIO"},
@@ -57,9 +65,9 @@ SubjectTarget monitoredSubjects[] = {
   {"CompSci",   "CS1"} // Matches [13A/CS1]
 };
 int monitoredCount = 3;
-// Matrix Rain Variables
-int drops[10]; 
-unsigned long lastFrame = 0;
+
+
+
 // --- SMART SCHEDULE DATA ---
 struct Lesson {
   String name;
@@ -68,8 +76,10 @@ struct Lesson {
   int startH;
   int startM;
 };
+
 // 5 Days, Max 6 Lessons per day
 Lesson timetable[5][6]; 
+
 BLYNK_WRITE(V0) { missing = param.asInt(); updateNeeded = true; }
 BLYNK_WRITE(V1) { assigned = param.asInt(); updateNeeded = true; }
 BLYNK_WRITE(V2) { done = param.asInt(); updateNeeded = true; }
@@ -81,6 +91,7 @@ BLYNK_WRITE(V5) {
   Serial.print("RAW CLASS DATA: ");
   Serial.println(classData); // DEBUG
 } 
+
 // --- BIT BANG SPI FUNCTIONS ---
 void softwareSpiInit() {
   pinMode(XPT2046_CLK, OUTPUT);
@@ -92,6 +103,7 @@ void softwareSpiInit() {
   digitalWrite(XPT2046_CLK, LOW);
   digitalWrite(XPT2046_MOSI, LOW);
 }
+
 uint8_t softwareSpiTransfer(uint8_t data) {
   uint8_t result = 0;
   for (int i = 0; i < 8; i++) {
@@ -104,6 +116,7 @@ uint8_t softwareSpiTransfer(uint8_t data) {
   }
   return result;
 }
+
 int readTouchChannel(uint8_t cmd) {
   digitalWrite(XPT2046_CS, LOW);
   softwareSpiTransfer(cmd);
@@ -112,6 +125,7 @@ int readTouchChannel(uint8_t cmd) {
   digitalWrite(XPT2046_CS, HIGH);
   return ((h << 8) | l) >> 3;
 }
+
 // --- HELPER: Get Aggregated Missing Count ---
 int getMissingForSubject(String searchKey) {
   if (classData.length() == 0) return 0;
@@ -136,6 +150,7 @@ int getMissingForSubject(String searchKey) {
   }
   return totalMissing;
 }
+
 // --- HELPER: Get Short Code ---
 String getShortCode(String name) {
   if (name == "Biology") return "BIO";
@@ -147,6 +162,7 @@ String getShortCode(String name) {
   if (name == "FREE" || name == "Finished / Free Period") return "";
   return name.substring(0, 3); // Fallback
 }
+
 // --- PAGE 2: WEEKLY GRID ---
 void drawWeeklyGrid() {
   tft.fillScreen(C_BG);
@@ -166,6 +182,7 @@ void drawWeeklyGrid() {
   for(int d=0; d<5; d++) {
     tft.drawString(days[d], (d * colW) + (colW/2), 12);
   }
+
   // Draw Grid
   for(int d=0; d<5; d++) {
     for(int l=0; l<6; l++) {
@@ -200,6 +217,7 @@ void drawWeeklyGrid() {
           textColor = C_CYAN;
         }
       }
+
       // Fill Cell
       tft.fillRect(x, y, colW, rowH, cellColor);
       tft.drawRect(x, y, colW, rowH, C_GREY); // Grid Lines
@@ -211,14 +229,17 @@ void drawWeeklyGrid() {
     }
   }
 }
-// --- PAGE 3: BREAKDOWN  ---
+
+// --- PAGE 3: BREAKDOWN (ACADEMIC OVERVIEW) ---
 void drawBreakdown() {
   tft.fillScreen(C_BG);
-  tft.fillRect(0, 0, 320, 35, C_RED); 
+  
+  // Header
+  tft.fillRect(0, 0, 320, 35, C_CYAN); 
   tft.setTextFont(4);
-  tft.setTextColor(C_WHITE, C_RED); 
+  tft.setTextColor(C_BG, C_CYAN); 
   tft.setTextDatum(ML_DATUM);
-  tft.drawString("BREAKDOWN", 10, 18); 
+  tft.drawString("ACADEMIC OVERVIEW", 10, 18); 
   
   // CHECK FOR NO DATA
   if (classData.length() == 0) {
@@ -231,53 +252,44 @@ void drawBreakdown() {
     return;
   }
   
-  int y = 50;
+  int y = 55;
   
   // ITERATE MONITORED SUBJECTS ONLY
   for (int i = 0; i < monitoredCount; i++) {
     SubjectTarget s = monitoredSubjects[i];
     int totalMissing = getMissingForSubject(s.searchKey);
     
-    // CALCULATE INTEGRITY
-    // Each missing task = 20% Damage
-    int damage = totalMissing * 20;
-    int integrity = 100 - damage;
-    if (integrity < 0) integrity = 0;
+    // CALCULATE PERFORMANCE SCORE
+    // Formula: 100 - (Missing * 15)
+    int score = 100 - (totalMissing * 15);
+    if (score < 0) score = 0;
     
-    // DETERMINE STATUS & COLOR
-    uint16_t barColor = C_GREEN;
-    String status = "STABLE";
+    // DETERMINE STATUS COLOR
+    uint16_t statusColor = C_GREEN;
+    if (score < 100 && score >= 70) statusColor = C_YELLOW;
+    else if (score < 70) statusColor = C_RED;
     
-    if (integrity < 100 && integrity >= 40) {
-      barColor = C_YELLOW;
-      status = "CAUTION";
-    } else if (integrity < 40) {
-      barColor = C_RED;
-      status = "CRITICAL";
-    }
-    
-    // Draw Label (Subject Name)
-    tft.setTextFont(2);
+    // DRAW ROW 1: Name and Score
+    tft.setTextFont(4);
     tft.setTextColor(C_WHITE, C_BG);
-    tft.setTextDatum(ML_DATUM);
-    tft.drawString(s.displayName, 10, y+10);
+    tft.setTextDatum(TL_DATUM);
+    tft.drawString(s.displayName, 10, y);
     
-    // Draw Health Bar Background
-    tft.fillRect(100, y, 200, 20, C_GREY);
+    tft.setTextColor(statusColor, C_BG);
+    tft.setTextDatum(TR_DATUM);
+    tft.drawString(String(score) + "%", 310, y);
     
-    // Draw Health Bar Foreground
-    int barW = integrity * 2; // 100% * 2 = 200px width
-    if (barW > 0) tft.fillRect(100, y, barW, 20, barColor);
+    // DRAW ROW 2: Progress Bar
+    int barY = y + 28;
+    tft.fillRect(10, barY, 300, 10, C_GREY); // Background
     
-    // Draw Text Overlay (e.g. "100% [STABLE]")
-    tft.setTextFont(2);
-    tft.setTextColor(C_WHITE, C_BG); // Reset to safe default
-    String statusText = String(integrity) + "% [" + status + "]";
-    tft.drawString(statusText, 200, y+10); 
+    int barW = map(score, 0, 100, 0, 300);
+    if (barW > 0) tft.fillRect(10, barY, barW, 10, statusColor); // Foreground
     
-    y += 40; 
+    y += 55; // Next Subject
   }
 }
+
 // --- SETUP SCHEDULE ---
 void setupSchedule() {
   // MONDAY
@@ -287,6 +299,7 @@ void setupSchedule() {
   timetable[0][3] = {"Geography", "Miss Soggy", "H10", 11, 50};
   timetable[0][4] = {"Indep. Learning", "Miss Hampster", "Hall", 13, 25};
   timetable[0][5] = {"Indep. Learning", "Miss Hampster", "Hall", 14, 20};
+
   // TUESDAY
   timetable[1][0] = {"FREE", "", "", 8, 30};
   timetable[1][1] = {"Assembly", "", "Main Hall", 9, 25};
@@ -294,6 +307,7 @@ void setupSchedule() {
   timetable[1][3] = {"Indep. Learning", "Miss Hampster", "Hall", 11, 50};
   timetable[1][4] = {"Biology", "Miss Berlin", "SC9", 13, 25};
   timetable[1][5] = {"Biology", "Miss Berlin", "SC9", 14, 20};
+
   // WEDNESDAY
   timetable[2][0] = {"Geography", "Mr Sheffield", "H10", 8, 30};
   timetable[2][1] = {"Indep. Learning", "Miss Hampster", "Hall", 9, 25};
@@ -301,6 +315,7 @@ void setupSchedule() {
   timetable[2][3] = {"Indep. Learning", "Miss Hampster", "Hall", 11, 50};
   timetable[2][4] = {"FREE", "", "", 13, 25};
   timetable[2][5] = {"FREE", "", "", 14, 20};
+
   // THURSDAY
   timetable[3][0] = {"CompSci", "Mr Kraków", "IT3", 8, 30};
   timetable[3][1] = {"CompSci", "Mr Kraków", "IT3", 9, 25};
@@ -308,6 +323,7 @@ void setupSchedule() {
   timetable[3][3] = {"Biology", "Miss Bagel", "SC10", 11, 50};
   timetable[3][4] = {"Geography", "Mr Sheffield", "SEM3", 13, 25};
   timetable[3][5] = {"Geography", "Miss Soggy", "SEM3", 14, 20};
+
   // FRIDAY
   timetable[4][0] = {"Indep. Learning", "Miss Hampster", "Hall", 8, 30};
   timetable[4][1] = {"Indep. Learning", "Miss Hampster", "Hall", 9, 25};
@@ -316,12 +332,14 @@ void setupSchedule() {
   timetable[4][4] = {"FREE", "", "", 13, 25};
   timetable[4][5] = {"FREE", "", "", 14, 20};
 }
+
 void setup() {
   Serial.begin(115200);
   Serial.println("\n\n--- BOOTING SMART MONITOR ---");
   
   pinMode(21, OUTPUT);
   digitalWrite(21, HIGH);
+
   if (USE_SOFTWARE_SPI) {
     softwareSpiInit();
   } else {
@@ -329,18 +347,21 @@ void setup() {
     ts.begin(touchSpi);
     ts.setRotation(1);
   }
+
   tft.init();
   tft.setRotation(1); 
   tft.invertDisplay(1); 
   tft.fillScreen(C_BG);
   
-  for(int i=0; i<10; i++) drops[i] = random(0, 240);
+
   
   setupSchedule(); 
+
   tft.setTextFont(4);
   tft.setTextColor(C_CYAN, C_BG);
   tft.setTextDatum(MC_DATUM);
   tft.drawString("SYSTEM BOOT...", 160, 120);
+
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
   
   // INIT TIME
@@ -348,19 +369,14 @@ void setup() {
   
   Blynk.syncAll();
 }
+
 void loop() {
   Blynk.run();
-  // --- CHILL MODE ANIMATION ---
-  if (page == 0 && missing == 0) {
-    unsigned long now = millis();
-    if (now - lastFrame > 50) { 
-      drawMatrixRain();
-      lastFrame = now;
-    }
-  }
+
   // --- TOUCH POLLING ---
   int x = 0, y = 0, z = 0;
   bool touched = false;
+
   if (USE_SOFTWARE_SPI) {
     z = readTouchChannel(0xB1); 
     if (z > 200 && z < 3800) {
@@ -375,6 +391,7 @@ void loop() {
       touched = true;
     }
   }
+
   if (touched && z > 200 && z < 3800) {
     unsigned long now = millis();
     if (now - lastTap > 500) { 
@@ -384,11 +401,13 @@ void loop() {
       lastTap = now;
     }
   }
+
   if (updateNeeded) {
     drawPage();
     updateNeeded = false;
   }
 }
+
 void drawPage() {
   if (page == 4) { // Standby
     digitalWrite(21, LOW); 
@@ -403,7 +422,9 @@ void drawPage() {
   if (page == 2) drawWeeklyGrid();
   if (page == 3) drawBreakdown();
 }
+
 // --- VISUAL HELPERS ---
+
 void drawRedBleed() {
   tft.drawRoundRect(0, 0, 320, 240, 10, C_RED_1);
   tft.drawRoundRect(1, 1, 318, 238, 9, C_RED_1);
@@ -413,59 +434,64 @@ void drawRedBleed() {
   tft.drawRoundRect(5, 5, 310, 230, 5, C_RED_3);
   tft.drawRoundRect(6, 6, 308, 228, 4, C_RED_4);
 }
-void drawMatrixRain() {
-  tft.setTextFont(1);
-  tft.setTextColor(C_GREEN, C_BG);
-  for (int i = 0; i < 10; i++) {
-    int x = i * 32 + 10;
-    tft.drawChar(' ', x, drops[i], 1);
-    drops[i] += 10;
-    if (drops[i] > 240) drops[i] = random(0, -100); 
-    char c = random(33, 126);
-    tft.drawChar(c, x, drops[i], 1);
-  }
-  tft.setTextFont(4);
-  tft.setTextColor(C_GREEN, C_BG);
-  tft.setTextDatum(MC_DATUM);
-  tft.drawString("ALL SYSTEMS CLEAR", 160, 120);
+
+void drawGreenBleed() {
+  tft.drawRoundRect(0, 0, 320, 240, 10, C_GREEN_1);
+  tft.drawRoundRect(1, 1, 318, 238, 9, C_GREEN_1);
+  tft.drawRoundRect(2, 2, 316, 236, 8, C_GREEN_2);
+  tft.drawRoundRect(3, 3, 314, 234, 7, C_GREEN_2);
+  tft.drawRoundRect(4, 4, 312, 232, 6, C_GREEN_3);
+  tft.drawRoundRect(5, 5, 310, 230, 5, C_GREEN_3);
+  tft.drawRoundRect(6, 6, 308, 228, 4, C_GREEN_4);
 }
+
+
+
 // --- PAGE 0: DASHBOARD ---
 void drawDashboard() {
   tft.fillScreen(C_BG);
   
-  if (missing == 0) {
-    tft.setTextFont(4);
-    tft.setTextColor(C_GREEN, C_BG);
-    tft.setTextDatum(MC_DATUM);
-    tft.drawString("ALL SYSTEMS CLEAR", 160, 120);
-    return;
-  }
+  // Determine Status
+  bool isCritical = (missing > 0);
+  uint16_t mainColor = isCritical ? C_RED : C_GREEN;
+  String statusText = isCritical ? "CRITICAL ALERT" : "ON TRACK";
   
-  drawRedBleed();
+  // Draw Bleed
+  if (isCritical) drawRedBleed();
+  else drawGreenBleed();
+  
+  // Draw Header
   tft.setTextFont(4);
-  tft.setTextColor(C_RED, C_BG);
+  tft.setTextColor(mainColor, C_BG);
   tft.setTextDatum(TC_DATUM);
-  tft.drawString("CRITICAL ALERT", 160, 15);
+  tft.drawString(statusText, 160, 15);
+
   int yNum = 100; 
   tft.setTextFont(4); 
   tft.setTextSize(2); 
   
-  tft.setTextColor((missing>0 ? C_RED : C_WHITE), C_BG);
+  // Missing Count
+  tft.setTextColor(mainColor, C_BG);
   tft.setTextDatum(MC_DATUM);
   tft.drawString(String(missing), 60, yNum);
   
+  // Assigned Count
   tft.setTextColor(C_WHITE, C_BG);
   tft.drawString(String(assigned), 160, yNum);
   
+  // Done Count
   tft.setTextColor(C_CYAN, C_BG);
   tft.drawString(String(done), 260, yNum);
   
+  // Labels
   tft.setTextSize(1);
   tft.setTextFont(2);
   tft.setTextColor(C_WHITE, C_BG); 
   tft.drawString("MISSING", 60, 135);
   tft.drawString("ASSIGNED", 160, 135);
   tft.drawString("DONE", 260, 135);
+
+  // Priority Task (Only if missing > 0)
   if (missing > 0) {
     tft.setTextFont(2);
     tft.setTextColor(C_WHITE, C_BG);
@@ -478,6 +504,13 @@ void drawDashboard() {
     String safe = taskName;
     while(tft.textWidth(safe) > 280) safe.remove(safe.length()-1);
     tft.drawString(safe, 160, 205); 
+  } else {
+    // Calm Message
+    tft.setTextFont(2);
+    tft.setTextColor(C_GREEN, C_BG);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("All assignments up to date.", 160, 185);
+    tft.drawString("Good work!", 160, 205);
   }
 }
 // --- PAGE 1: LIST ---
